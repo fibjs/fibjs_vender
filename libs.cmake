@@ -8,6 +8,8 @@ set(libs
     expat
     gumbo
     zlib
+    zstd
+    brotli
     leveldb
     snappy
     msgpack
