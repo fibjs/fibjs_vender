@@ -665,7 +665,10 @@ BROTLI_UNUSED_FUNCTION void BrotliSuppressUnusedFunctions(void) {
 #undef BROTLI_TEST
 #endif
 
-#if BROTLI_GNUC_HAS_ATTRIBUTE(model, 3, 0, 3)
+/* The "model" attribute is not supported by every target (e.g. LoongArch
+   with clang rejects it), so only enable it where it is known to work. */
+#if !defined(BROTLI_MODEL) && BROTLI_GNUC_HAS_ATTRIBUTE(model, 3, 0, 3) && \
+    !defined(BROTLI_TARGET_IA64) && !defined(BROTLI_TARGET_LOONGARCH64)
 #define BROTLI_MODEL(M) __attribute__((model(M)))
 #else
 #define BROTLI_MODEL(M) /* M */
