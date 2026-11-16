@@ -1,6 +1,7 @@
 
 #include "src/base/platform/condition-variable.h"
 #include "src/base/platform/time.h"
+#include <cstdint>
 #include <exlib/include/fiber.h>
 
 namespace v8 {
@@ -40,8 +41,15 @@ void ConditionVariable::Wait(Mutex* mutex)
 bool ConditionVariable::WaitFor(Mutex* mutex, const TimeDelta& rel_time)
 {
     mutex->AssertHeldAndUnmark();
+
+    // exlib waits in milliseconds; V8's TimeDelta is in microseconds.
+    // Round up so a positive sub-millisecond timeout does not collapse to 0
+    // (exlib treats 0 as trywait, i.e. no wait).
+    int64_t ms = rel_time.InMillisecondsRoundedUp();
+    if (ms < 0) ms = 0;
+    int32_t timeout = ms > INT32_MAX ? INT32_MAX : static_cast<int32_t>(ms);
     bool result = _fiber_condvar(native_handle_)->wait(
-        *_fiber_locker(mutex->native_handle_), rel_time.InMicroseconds());
+        *_fiber_locker(mutex->native_handle_), timeout);
     mutex->AssertUnheldAndMark();
 
     return result;
