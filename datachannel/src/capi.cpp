@@ -278,6 +278,13 @@ createRtpPacketizationConfig(const rtcPacketizationHandlerInit *init) {
 	config->playoutDelayId = init->playoutDelayId;
 	config->playoutDelayMin = init->playoutDelayMin;
 	config->playoutDelayMax = init->playoutDelayMax;
+	config->colorSpaceId = init->colorSpaceId;
+	config->colorChromaSitingHorz = init->colorChromaSitingHorz;
+	config->colorChromaSitingVert = init->colorChromaSitingVert;
+	config->colorRange = init->colorRange;
+	config->colorPrimaries = init->colorPrimaries;
+	config->colorTransfer = init->colorTransfer;
+	config->colorMatrix = init->colorMatrix;
 	return config;
 }
 
@@ -628,6 +635,24 @@ int rtcGetRemoteDescriptionType(int pc, char *buffer, int size) {
 			return copyAndReturn(desc->typeString(), buffer, size);
 		else
 			return RTC_ERR_NOT_AVAIL;
+	});
+}
+
+int rtcCreateOffer(int pc, char *buffer, int size) {
+	return wrap([&] {
+		auto peerConnection = getPeerConnection(pc);
+
+		auto desc = peerConnection->createOffer();
+		return copyAndReturn(string(desc), buffer, size);
+	});
+}
+
+int rtcCreateAnswer(int pc, char *buffer, int size) {
+	return wrap([&] {
+		auto peerConnection = getPeerConnection(pc);
+
+		auto desc = peerConnection->createAnswer();
+		return copyAndReturn(string(desc), buffer, size);
 	});
 }
 
@@ -1071,7 +1096,8 @@ int rtcAddTrackEx(int pc, const rtcTrackInit *init) {
 		case RTC_CODEC_OPUS:
 		case RTC_CODEC_PCMU:
 		case RTC_CODEC_PCMA:
-		case RTC_CODEC_AAC: {
+		case RTC_CODEC_AAC:
+		case RTC_CODEC_G722: {
 			auto audio = std::make_unique<Description::Audio>(mid, direction);
 			switch (init->codec) {
 			case RTC_CODEC_OPUS:
@@ -1085,6 +1111,9 @@ int rtcAddTrackEx(int pc, const rtcTrackInit *init) {
 				break;
 			case RTC_CODEC_AAC:
 				audio->addAACCodec(pt, profile);
+				break;
+			case RTC_CODEC_G722:
+				audio->addG722Codec(pt, profile);
 				break;
 			default:
 				break;
@@ -1241,6 +1270,7 @@ int rtcSetH265Packetizer(int tr, const rtcPacketizerInit *init) {
 		auto track = getTrack(tr);
 		// create RTP configuration
 		auto rtpConfig = createRtpPacketizationConfig(init);
+		emplaceRtpConfig(rtpConfig, tr);
 		// create packetizer
 		auto nalSeparator = init ? init->nalSeparator : RTC_NAL_SEPARATOR_LENGTH;
 		auto maxFragmentSize = init && init->maxFragmentSize ? init->maxFragmentSize
@@ -1257,6 +1287,7 @@ int rtcSetAV1Packetizer(int tr, const rtcPacketizerInit *init) {
 		auto track = getTrack(tr);
 		// create RTP configuration
 		auto rtpConfig = createRtpPacketizationConfig(init);
+		emplaceRtpConfig(rtpConfig, tr);
 		// create packetizer
 		auto maxFragmentSize = init && init->maxFragmentSize ? init->maxFragmentSize
 		                                                     : RTC_DEFAULT_MAX_FRAGMENT_SIZE;
@@ -1288,8 +1319,48 @@ int rtcSetAACPacketizer(int tr, const rtcPacketizerInit *init) {
 		auto track = getTrack(tr);
 		// create RTP configuration
 		auto rtpConfig = createRtpPacketizationConfig(init);
+		emplaceRtpConfig(rtpConfig, tr);
 		// create packetizer
 		auto packetizer = std::make_shared<AACRtpPacketizer>(rtpConfig);
+		track->setMediaHandler(packetizer);
+		return RTC_ERR_SUCCESS;
+	});
+}
+
+int rtcSetPCMUPacketizer(int tr, const rtcPacketizerInit *init) {
+	return wrap([&] {
+		auto track = getTrack(tr);
+		// create RTP configuration
+		auto rtpConfig = createRtpPacketizationConfig(init);
+		emplaceRtpConfig(rtpConfig, tr);
+		// create packetizer
+		auto packetizer = std::make_shared<PCMURtpPacketizer>(rtpConfig);
+		track->setMediaHandler(packetizer);
+		return RTC_ERR_SUCCESS;
+	});
+}
+
+int rtcSetPCMAPacketizer(int tr, const rtcPacketizerInit *init) {
+	return wrap([&] {
+		auto track = getTrack(tr);
+		// create RTP configuration
+		auto rtpConfig = createRtpPacketizationConfig(init);
+		emplaceRtpConfig(rtpConfig, tr);
+		// create packetizer
+		auto packetizer = std::make_shared<PCMARtpPacketizer>(rtpConfig);
+		track->setMediaHandler(packetizer);
+		return RTC_ERR_SUCCESS;
+	});
+}
+
+int rtcSetG722Packetizer(int tr, const rtcPacketizerInit *init) {
+	return wrap([&] {
+		auto track = getTrack(tr);
+		// create RTP configuration
+		auto rtpConfig = createRtpPacketizationConfig(init);
+		emplaceRtpConfig(rtpConfig, tr);
+		// create packetizer
+		auto packetizer = std::make_shared<G722RtpPacketizer>(rtpConfig);
 		track->setMediaHandler(packetizer);
 		return RTC_ERR_SUCCESS;
 	});
@@ -1396,14 +1467,6 @@ int rtcGetLastTrackSenderReportTimestamp(int id, uint32_t *timestamp) {
 	});
 }
 
-int rtcSetNeedsToSendRtcpSr(int id) {
-	return wrap([id] {
-		auto sender = getRtcpSrReporter(id);
-		sender->setNeedsToReport();
-		return RTC_ERR_SUCCESS;
-	});
-}
-
 int rtcGetTrackPayloadTypesForCodec(int tr, const char *ccodec, int *buffer, int size) {
 	return wrap([&] {
 		auto track = getTrack(tr);
@@ -1478,6 +1541,11 @@ int rtcSetSsrcForType(const char *mediaType, const char *sdp, char *buffer, cons
 		}
 		return copyAndReturn(string(description), buffer, bufferSize);
 	});
+}
+
+int rtcSetNeedsToSendRtcpSr(int) {
+	// Dummy
+	return RTC_ERR_SUCCESS;
 }
 
 #endif // RTC_ENABLE_MEDIA
@@ -1563,7 +1631,7 @@ int rtcGetWebSocketPath(int ws, char *buffer, int size) {
 	});
 }
 
-RTC_C_EXPORT int rtcCreateWebSocketServer(const rtcWsServerConfiguration *config,
+int rtcCreateWebSocketServer(const rtcWsServerConfiguration *config,
                                           rtcWebSocketClientCallbackFunc cb) {
 	return wrap([&] {
 		if (!config)
@@ -1600,7 +1668,7 @@ RTC_C_EXPORT int rtcCreateWebSocketServer(const rtcWsServerConfiguration *config
 	});
 }
 
-RTC_C_EXPORT int rtcDeleteWebSocketServer(int wsserver) {
+int rtcDeleteWebSocketServer(int wsserver) {
 	return wrap([&] {
 		auto webSocketServer = getWebSocketServer(wsserver);
 		webSocketServer->onClient(nullptr);
@@ -1610,7 +1678,7 @@ RTC_C_EXPORT int rtcDeleteWebSocketServer(int wsserver) {
 	});
 }
 
-RTC_C_EXPORT int rtcGetWebSocketServerPort(int wsserver) {
+int rtcGetWebSocketServerPort(int wsserver) {
 	return wrap([&] {
 		auto webSocketServer = getWebSocketServer(wsserver);
 		return int(webSocketServer->port());
@@ -1619,28 +1687,11 @@ RTC_C_EXPORT int rtcGetWebSocketServerPort(int wsserver) {
 
 #endif
 
-void rtcPreload() {
-	try {
-		rtc::Preload();
-	} catch (const std::exception &e) {
-		PLOG_ERROR << e.what();
-	}
-}
-
-void rtcCleanup() {
-	try {
-		size_t count = eraseAll();
-		if (count != 0) {
-			PLOG_INFO << count << " objects were not properly destroyed before cleanup";
-		}
-
-		if (rtc::Cleanup().wait_for(10s) == std::future_status::timeout)
-			throw std::runtime_error(
-			    "Cleanup timeout (possible deadlock or undestructible object)");
-
-	} catch (const std::exception &e) {
-		PLOG_ERROR << e.what();
-	}
+int rtcSetThreadPoolSize(unsigned int count) {
+	return wrap([&] {
+		SetThreadPoolSize(count);
+		return RTC_ERR_SUCCESS;
+	});
 }
 
 int rtcSetSctpSettings(const rtcSctpSettings *settings) {
@@ -1691,3 +1742,28 @@ int rtcSetSctpSettings(const rtcSctpSettings *settings) {
 		return RTC_ERR_SUCCESS;
 	});
 }
+
+void rtcPreload() {
+	try {
+		rtc::Preload();
+	} catch (const std::exception &e) {
+		PLOG_ERROR << e.what();
+	}
+}
+
+void rtcCleanup() {
+	try {
+		size_t count = eraseAll();
+		if (count != 0) {
+			PLOG_INFO << count << " objects were not properly destroyed before cleanup";
+		}
+
+		if (rtc::Cleanup().wait_for(10s) == std::future_status::timeout)
+			throw std::runtime_error(
+			    "Cleanup timeout (possible deadlock or undestructible object)");
+
+	} catch (const std::exception &e) {
+		PLOG_ERROR << e.what();
+	}
+}
+

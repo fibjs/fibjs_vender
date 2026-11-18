@@ -66,9 +66,10 @@ public:
 	bool ended() const;
 
 	void hintType(Type type);
-	void setFingerprint(CertificateFingerprint f);
 	void addIceOption(string option);
 	void removeIceOption(const string &option);
+	void setIceAttribute(string ufrag, string pwd);
+	void setFingerprint(CertificateFingerprint f);
 
 	std::vector<string> attributes() const;
 	void addAttribute(string attr);
@@ -250,6 +251,7 @@ public:
 		void addPCMACodec(int payloadType, optional<string> profile = std::nullopt);
 		void addPCMUCodec(int payloadType, optional<string> profile = std::nullopt);
 		void addAACCodec(int payloadType, optional<string> profile = std::nullopt);
+		void addG722Codec(int payloadType, optional<string> profile = std::nullopt);
 
 		[[deprecated("Use addAACCodec")]] inline void
 		addAacCodec(int payloadType, optional<string> profile = std::nullopt) {
@@ -290,6 +292,8 @@ public:
 
 	static Type stringToType(const string &typeString);
 	static string typeToString(Type type);
+
+	string sessionId() const;
 
 private:
 	optional<Candidate> defaultCandidate() const;

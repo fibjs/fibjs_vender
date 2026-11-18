@@ -22,6 +22,12 @@ elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
         -DHAVE_SIN6_LEN
         -DHAVE_SIN_LEN
     )
+
+    # net/route.h exists on macOS but not in the iOS/tvOS/watchOS SDKs;
+    # usrsctp has a fallback for the latter, so only define it on desktop.
+    if(NOT ${BUILD_OS} MATCHES "iPhone")
+        add_definitions(-DHAVE_NET_ROUTE_H)
+    endif()
 endif()
 
 add_definitions(

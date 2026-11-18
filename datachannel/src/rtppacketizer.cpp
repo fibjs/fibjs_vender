@@ -19,35 +19,70 @@ RtpPacketizer::RtpPacketizer(shared_ptr<RtpPacketizationConfig> rtpConfig) : rtp
 
 RtpPacketizer::~RtpPacketizer() {}
 
-message_ptr RtpPacketizer::packetize(shared_ptr<binary> payload, bool mark) {
-	size_t rtpExtHeaderSize = 0;
+std::vector<binary> RtpPacketizer::fragment(binary data) {
+	// Default implementation
+	return {std::move(data)};
+}
 
-	const bool setVideoRotation = (rtpConfig->videoOrientationId != 0) &&
-	                              (rtpConfig->videoOrientationId <
-	                               15) && // needs fixing if longer extension headers are supported
-	                              mark &&
-	                              (rtpConfig->videoOrientation != 0);
+message_ptr RtpPacketizer::packetize(const binary &payload, bool mark) {
+	size_t rtpExtHeaderSize = 0;
+	bool twoByteHeader = false;
+
+	const bool setVideoRotation =
+	    (rtpConfig->videoOrientationId != 0) && mark && (rtpConfig->videoOrientation != 0);
+
+	std::optional<DependencyDescriptorWriter> ddWriter;
+	if (rtpConfig->dependencyDescriptorContext.has_value()) {
+		ddWriter.emplace(*rtpConfig->dependencyDescriptorContext);
+	}
+
+	// Determine if a two-byte header is necessary
+	// Check for dependency descriptor extension
+	if (ddWriter.has_value()) {
+		auto sizeBytes = ddWriter->getSize();
+		if (sizeBytes > 16 || rtpConfig->dependencyDescriptorId > 14) {
+			twoByteHeader = true;
+		}
+	}
+	// Check for other extensions
+	if ((setVideoRotation && rtpConfig->videoOrientationId > 14) ||
+	    (rtpConfig->mid.has_value() && rtpConfig->midId > 14) ||
+	    (rtpConfig->rid.has_value() && rtpConfig->ridId > 14) ||
+	    rtpConfig->playoutDelayId > 14) {
+		twoByteHeader = true;
+	}
+	size_t headerSize = twoByteHeader ? 2 : 1;
 
 	if (setVideoRotation)
-		rtpExtHeaderSize += 2;
+		rtpExtHeaderSize += headerSize + 1;
 
-	const bool setPlayoutDelay = (rtpConfig->playoutDelayId > 0 && rtpConfig->playoutDelayId < 15);
+	const bool setPlayoutDelay = rtpConfig->playoutDelayId > 0;
+	const bool setColorSpace = rtpConfig->colorSpaceId > 0;
 
 	if (setPlayoutDelay)
-		rtpExtHeaderSize += 4;
+		rtpExtHeaderSize += headerSize + 3;
 
+	if (setColorSpace)
+		rtpExtHeaderSize += headerSize + 4;
+	
 	if (rtpConfig->mid.has_value())
-		rtpExtHeaderSize += (1 + rtpConfig->mid->length());
+		rtpExtHeaderSize += headerSize + rtpConfig->mid->length();
 
 	if (rtpConfig->rid.has_value())
-		rtpExtHeaderSize += (1 + rtpConfig->rid->length());
+		rtpExtHeaderSize += headerSize + rtpConfig->rid->length();
+
+	if (ddWriter.has_value()) {
+		rtpExtHeaderSize += headerSize + ddWriter->getSize();
+	}
 
 	if (rtpExtHeaderSize != 0)
 		rtpExtHeaderSize += 4;
 
+	// Align the size to the multiple of 4 bytes
+	// according to RFC 3550, sec. 5.3.1.
 	rtpExtHeaderSize = (rtpExtHeaderSize + 3) & ~3;
 
-	auto message = make_message(RtpHeaderSize + rtpExtHeaderSize + payload->size());
+	auto message = make_message(RtpHeaderSize + rtpExtHeaderSize + payload.size());
 	auto *rtp = (RtpHeader *)message->data();
 	rtp->setPayloadType(rtpConfig->payloadType);
 	rtp->setSeqNumber(rtpConfig->sequenceNumber++); // increase sequence number
@@ -62,7 +97,7 @@ message_ptr RtpPacketizer::packetize(shared_ptr<binary> payload, bool mark) {
 		rtp->setExtension(true);
 
 		auto extHeader = rtp->getExtensionHeader();
-		extHeader->setProfileSpecificId(0xbede);
+		extHeader->setProfileSpecificId(twoByteHeader ? 0x1000 : 0xbede);
 
 		auto headerLength = static_cast<uint16_t>(rtpExtHeaderSize / 4) - 1;
 
@@ -71,24 +106,30 @@ message_ptr RtpPacketizer::packetize(shared_ptr<binary> payload, bool mark) {
 
 		size_t offset = 0;
 		if (setVideoRotation) {
-			extHeader->writeCurrentVideoOrientation(offset, rtpConfig->videoOrientationId,
-			                                        rtpConfig->videoOrientation);
-			offset += 2;
+			offset += extHeader->writeCurrentVideoOrientation(
+			    twoByteHeader, offset, rtpConfig->videoOrientationId, rtpConfig->videoOrientation);
 		}
 
 		if (rtpConfig->mid.has_value()) {
-			extHeader->writeOneByteHeader(
-			    offset, rtpConfig->midId,
-			    reinterpret_cast<const std::byte *>(rtpConfig->mid->c_str()),
-			    rtpConfig->mid->length());
-			offset += (1 + rtpConfig->mid->length());
+			offset +=
+			    extHeader->writeHeader(twoByteHeader, offset, rtpConfig->midId,
+			                           reinterpret_cast<const std::byte *>(rtpConfig->mid->c_str()),
+			                           rtpConfig->mid->length());
 		}
 
 		if (rtpConfig->rid.has_value()) {
-			extHeader->writeOneByteHeader(
-			    offset, rtpConfig->ridId,
-			    reinterpret_cast<const std::byte *>(rtpConfig->rid->c_str()),
-			    rtpConfig->rid->length());
+			offset +=
+			    extHeader->writeHeader(twoByteHeader, offset, rtpConfig->ridId,
+			                           reinterpret_cast<const std::byte *>(rtpConfig->rid->c_str()),
+			                           rtpConfig->rid->length());
+		}
+
+		if (ddWriter.has_value()) {
+			auto sizeBytes = ddWriter->getSize();
+			std::vector<std::byte> buf(sizeBytes);
+			ddWriter->writeTo(buf.data(), sizeBytes);
+			offset += extHeader->writeHeader(
+			    twoByteHeader, offset, rtpConfig->dependencyDescriptorId, buf.data(), sizeBytes);
 		}
 
 		if (setPlayoutDelay) {
@@ -96,32 +137,67 @@ message_ptr RtpPacketizer::packetize(shared_ptr<binary> payload, bool mark) {
 			uint16_t max = rtpConfig->playoutDelayMax & 0xFFF;
 
 			// 12 bits for min + 12 bits for max
-			byte data[] = {
-				byte((min >> 4) & 0xFF), 
-				byte(((min & 0xF) << 4) | ((max >> 8) & 0xF)),
-				byte(max & 0xFF)
-			};
+			byte data[] = {byte((min >> 4) & 0xFF), byte(((min & 0xF) << 4) | ((max >> 8) & 0xF)),
+			               byte(max & 0xFF)};
 
-			extHeader->writeOneByteHeader(offset, rtpConfig->playoutDelayId, data, 3);
-			offset += 4;
+			offset += extHeader->writeHeader(
+			    twoByteHeader, offset, rtpConfig->playoutDelayId, data, 3);
+		}
+
+		if (setColorSpace) {
+			uint8_t range_chr = (rtpConfig->colorRange << 4) + (rtpConfig->colorChromaSitingHorz << 2) + rtpConfig->colorChromaSitingVert;
+
+			byte data[] = {byte(rtpConfig->colorPrimaries), byte(rtpConfig->colorTransfer),
+			               byte(rtpConfig->colorMatrix), byte(range_chr)};
+
+			offset += extHeader->writeHeader(
+			    twoByteHeader, offset, rtpConfig->colorSpaceId, data, 4);
 		}
 	}
 
 	rtp->preparePacket();
 
-	std::memcpy(message->data() + RtpHeaderSize + rtpExtHeaderSize, payload->data(),
-	            payload->size());
+	std::memcpy(message->data() + RtpHeaderSize + rtpExtHeaderSize, payload.data(), payload.size());
 
 	return message;
 }
 
+message_ptr RtpPacketizer::packetize(shared_ptr<binary> payload, bool mark) {
+	return packetize(*payload, mark);
+}
+
 void RtpPacketizer::media([[maybe_unused]] const Description::Media &desc) {}
 
-void RtpPacketizer::outgoing([[maybe_unused]] message_vector &messages,
+void RtpPacketizer::outgoing(message_vector &messages,
                              [[maybe_unused]] const message_callback &send) {
-	// Default implementation
-	for (auto &message : messages)
-		message = packetize(message, false);
+	message_vector result;
+	for (const auto &message : messages) {
+		if (const auto &frameInfo = message->frameInfo) {
+			if (frameInfo->payloadType && frameInfo->payloadType != rtpConfig->payloadType)
+				continue;
+
+			if (frameInfo->timestampSeconds)
+				rtpConfig->timestamp =
+				    rtpConfig->startTimestamp +
+				    rtpConfig->secondsToTimestamp(
+				        std::chrono::duration<double>(*frameInfo->timestampSeconds).count());
+			else
+				rtpConfig->timestamp = frameInfo->timestamp;
+		}
+
+		auto payloads = fragment(std::move(*message));
+		for (size_t i = 0; i < payloads.size(); i++) {
+			if (rtpConfig->dependencyDescriptorContext.has_value()) {
+				auto &ctx = *rtpConfig->dependencyDescriptorContext;
+				ctx.descriptor.startOfFrame = i == 0;
+				ctx.descriptor.endOfFrame = i == payloads.size() - 1;
+			}
+			bool mark = i == payloads.size() - 1;
+			result.push_back(packetize(payloads[i], mark));
+		}
+	}
+
+	messages.swap(result);
 }
 
 } // namespace rtc

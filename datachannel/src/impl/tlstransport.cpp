@@ -258,8 +258,9 @@ ssize_t TlsTransport::ReadCallback(gnutls_transport_ptr_t ptr, void *data, size_
 				message = *next;
 				if (message->size() > 0)
 					break;
-				else
-					t->recv(message); // Pass zero-sized messages through
+
+				t->recv(message); // Pass zero-sized messages through
+				message.reset();
 			}
 		}
 
@@ -338,7 +339,7 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 		    MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT));
 
 		mbedtls_ssl_conf_max_version(&mConf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3); // TLS 1.2
-		mbedtls_ssl_conf_authmode(&mConf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+		mbedtls_ssl_conf_authmode(&mConf, MBEDTLS_SSL_VERIFY_NONE);
 		mbedtls_ssl_conf_rng(&mConf, mbedtls_ctr_drbg_random, &mDrbg);
 
 		if (certificate) {
@@ -529,8 +530,9 @@ int TlsTransport::ReadCallback(void *ctx, unsigned char *buf, size_t len) {
 				message = *next;
 				if (message->size() > 0)
 					break;
-				else
-					t->recv(message); // Pass zero-sized messages through
+
+				t->recv(message); // Pass zero-sized messages through
+				message.reset();
 			}
 		}
 
@@ -622,8 +624,11 @@ TlsTransport::TlsTransport(variant<shared_ptr<TcpTransport>, shared_ptr<HttpProx
 
 		if (mIsClient && mHost) {
 			SSL_set_hostflags(mSsl, 0);
+#if OPENSSL_VERSION_NUMBER >= 0x40000000
+			openssl::check(SSL_set1_dnsname(mSsl, mHost->c_str()), "Failed to set SSL dnsname");
+#else
 			openssl::check(SSL_set1_host(mSsl, mHost->c_str()), "Failed to set SSL host");
-
+#endif
 			PLOG_VERBOSE << "Server Name Indication: " << *mHost;
 			SSL_set_tlsext_host_name(mSsl, mHost->c_str());
 		}
@@ -741,16 +746,19 @@ void TlsTransport::doRecv() {
 				return;
 
 			message_ptr message = std::move(*next);
-			if (message->size() > 0)
-				BIO_write(mInBio, message->data(), int(message->size())); // Input
-			else
+			if (message->size() == 0) {
 				recv(message); // Pass zero-sized messages through
+				continue;
+			}
 
+			bool incomingWritten = false;
 			if (state() == State::Connecting) {
 				// Continue the handshake
 				int ret, err;
 				{
 					std::lock_guard lock(mSslMutex);
+					BIO_write(mInBio, message->data(), int(message->size()));
+					incomingWritten = true;
 					ret = SSL_do_handshake(mSsl);
 					err = SSL_get_error(mSsl, ret);
 					flushOutput();
@@ -768,6 +776,10 @@ void TlsTransport::doRecv() {
 				while (true) {
 					{
 						std::lock_guard lock(mSslMutex);
+						if (!incomingWritten) {
+							BIO_write(mInBio, message->data(), int(message->size()));
+							incomingWritten = true;
+						}
 						ret = SSL_read(mSsl, buffer, bufferSize);
 						err = SSL_get_error(mSsl, ret);
 						flushOutput(); // SSL_read() can also cause write operations

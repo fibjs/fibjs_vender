@@ -32,11 +32,6 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(__FreeBSD__) && !defined(__Userspace__)
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD: head/sys/netinet/sctp_bsd_addr.c 366426 2020-10-04 15:37:34Z tuexen $");
-#endif
-
 #include <netinet/sctp_os.h>
 #include <netinet/sctp_var.h>
 #include <netinet/sctp_pcb.h>
@@ -195,7 +190,7 @@ sctp_startup_iterator(void)
 	kproc_create(sctp_iterator_thread,
 	             (void *)NULL,
 	             &sctp_it_ctl.thread_proc,
-	             RFPROC,
+	             0,
 	             SCTP_KTHREAD_PAGES,
 	             SCTP_KTRHEAD_NAME);
 #elif defined(__APPLE__)
@@ -448,7 +443,7 @@ sctp_init_ifns_for_vrf(int vrfid)
 #if defined(INET6)
 		if ((ifa->ifa_addr->sa_family == AF_INET6) &&
 		    IN6_IS_ADDR_UNSPECIFIED(&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr)) {
-			/* skip unspecifed addresses */
+			/* skip unspecified addresses */
 			continue;
 		}
 #endif
@@ -521,7 +516,7 @@ sctp_init_ifns_for_vrf(int vrfid)
 			}
 			if (ifa->ifa_addr->sa_family == AF_INET6) {
 				if (IN6_IS_ADDR_UNSPECIFIED(&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr)) {
-					/* skip unspecifed addresses */
+					/* skip unspecified addresses */
 					continue;
 				}
 			} else {
@@ -594,7 +589,7 @@ sctp_init_ifns_for_vrf(int vrfid)
 #ifdef INET6
 			case AF_INET6:
 				if (IN6_IS_ADDR_UNSPECIFIED(&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr)) {
-					/* skip unspecifed addresses */
+					/* skip unspecified addresses */
 					continue;
 				}
 				break;
@@ -699,7 +694,7 @@ sctp_addr_change(struct ifaddr *ifa, int cmd)
 	case AF_INET6:
 		ifa_flags = ((struct in6_ifaddr *)ifa)->ia6_flags;
 		if (IN6_IS_ADDR_UNSPECIFIED(&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr)) {
-			/* skip unspecifed addresses */
+			/* skip unspecified addresses */
 			return;
 		}
 		break;
@@ -718,12 +713,11 @@ sctp_addr_change(struct ifaddr *ifa, int cmd)
 		                           (void *)ifa, ifa->ifa_addr, ifa_flags, 1);
 	} else {
 		sctp_del_addr_from_vrf(SCTP_DEFAULT_VRFID, ifa->ifa_addr,
+		                       (void *)ifa->ifa_ifp,
 #if defined(__APPLE__) && !defined(__Userspace__)
-		                       ifnet_index(ifa->ifa_ifp),
-		                       ifnet_name(ifa->ifa_ifp));
+		                       ifnet_index(ifa->ifa_ifp));
 #else
-		                       ifa->ifa_ifp->if_index,
-		                       ifa->ifa_ifp->if_xname);
+		                       ifa->ifa_ifp->if_index);
 #endif
 
 		/* We don't bump refcount here so when it completes
@@ -774,9 +768,9 @@ sctp_get_mbuf_for_msg(unsigned int space_needed, int want_header,
 	struct mbuf *m = NULL;
 #if defined(__FreeBSD__) || defined(__Userspace__)
 #if defined(__Userspace__)
-	m =  m_getm2(NULL, space_needed, how, type, want_header ? M_PKTHDR : 0, allonebuf);
+	m = m_getm2(NULL, space_needed, how, type, want_header ? M_PKTHDR : 0, allonebuf);
 #else
-	m =  m_getm2(NULL, space_needed, how, type, want_header ? M_PKTHDR : 0);
+	m = m_getm2(NULL, space_needed, how, type, want_header ? M_PKTHDR : 0);
 #endif
 	if (m == NULL) {
 		/* bad, no memory */
@@ -949,11 +943,10 @@ sctp_copy_out_packet_log(uint8_t *target, int length)
 	 * start copying up to length bytes out.
 	 * We return the number of bytes copied.
 	 */
-	int tocopy, this_copy;
+	int this_copy;
 	int *lenat;
 	int did_delay = 0;
 
-	tocopy = length;
 	if (length < (int)(2 * sizeof(int))) {
 		/* not enough room */
 		return (0);
@@ -981,7 +974,7 @@ sctp_copy_out_packet_log(uint8_t *target, int length)
 	memcpy((void *)lenat, (void *)SCTP_BASE_VAR(packet_log_buffer), this_copy);
 	if (SCTP_PKTLOG_WRITERS_NEED_LOCK) {
 		atomic_subtract_int(&SCTP_BASE_VAR(packet_log_writers),
-				    SCTP_PKTLOG_WRITERS_NEED_LOCK);
+		                    SCTP_PKTLOG_WRITERS_NEED_LOCK);
 	}
 	SCTP_IP_PKTLOG_UNLOCK();
 	return (this_copy + sizeof(int));

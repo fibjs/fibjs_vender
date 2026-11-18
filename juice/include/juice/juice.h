@@ -41,6 +41,8 @@ extern "C" {
 #define JUICE_ERR_FAILED -2    // runtime error
 #define JUICE_ERR_NOT_AVAIL -3 // element not available
 #define JUICE_ERR_IGNORED -4   // ignored
+#define JUICE_ERR_AGAIN -5     // buffer full
+#define JUICE_ERR_TOO_LARGE -6 // datagram too large
 
 // ICE Agent
 
@@ -65,15 +67,15 @@ typedef void (*juice_cb_gathering_done_t)(juice_agent_t *agent, void *user_ptr);
 typedef void (*juice_cb_recv_t)(juice_agent_t *agent, const char *data, size_t size,
                                 void *user_ptr);
 
-typedef struct juice_mux_incoming {
+typedef struct juice_mux_binding_request {
 	const char *local_ufrag;
 	const char *remote_ufrag;
 
 	const char *address;
 	uint16_t port;
-} juice_mux_incoming_t;
+} juice_mux_binding_request_t;
 
-typedef void (*juice_cb_mux_incoming_t)(const juice_mux_incoming_t *info, void *user_ptr);
+typedef void (*juice_cb_mux_incoming_t)(const juice_mux_binding_request_t *info, void *user_ptr);
 
 typedef struct juice_turn_server {
 	const char *host;
@@ -87,6 +89,11 @@ typedef enum juice_concurrency_mode {
 	JUICE_CONCURRENCY_MODE_MUX,      // Connections are multiplexed on a single UDP socket
 	JUICE_CONCURRENCY_MODE_THREAD,   // Each connection runs in its own thread
 } juice_concurrency_mode_t;
+
+typedef enum juice_ice_tcp_mode {
+	JUICE_ICE_TCP_MODE_NONE = 0, // ICE-TCP is disabled
+	JUICE_ICE_TCP_MODE_ACTIVE,   // ICE-TCP will operate as a client
+} juice_ice_tcp_mode_t;
 
 typedef struct juice_config {
 	juice_concurrency_mode_t concurrency_mode;
@@ -130,7 +137,7 @@ JUICE_EXPORT int juice_get_selected_addresses(juice_agent_t *agent, char *local,
 JUICE_EXPORT int juice_set_local_ice_attributes(juice_agent_t *agent, const char *ufrag, const char *pwd);
 JUICE_EXPORT const char *juice_state_to_string(juice_state_t state);
 JUICE_EXPORT int juice_mux_listen(const char *bind_address, int local_port, juice_cb_mux_incoming_t cb, void *user_ptr);
-JUICE_EXPORT int juice_mux_stop_listen(const char *bind_address, int local_port);
+JUICE_EXPORT int juice_set_ice_tcp_mode(juice_agent_t *agent, juice_ice_tcp_mode_t ice_tcp_mode);
 
 // ICE server
 

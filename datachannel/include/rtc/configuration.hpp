@@ -72,7 +72,7 @@ struct RTC_CPP_EXPORT Configuration {
 	// Options
 	CertificateType certificateType = CertificateType::Default;
 	TransportPolicy iceTransportPolicy = TransportPolicy::All;
-	bool enableIceTcp = false;    // libnice only
+	bool enableIceTcp = false;
 	bool enableIceUdpMux = false; // libjuice only
 	bool disableAutoNegotiation = false;
 	bool disableAutoGathering = false;
@@ -90,9 +90,6 @@ struct RTC_CPP_EXPORT Configuration {
 	optional<size_t> maxMessageSize;
 
 	// Certificates and private keys
-	optional<string> iceUfrag;
-	optional<string> icePwd;
-
 	optional<string> certificatePemFile;
 	optional<string> keyPemFile;
 	optional<string> keyPemPass;

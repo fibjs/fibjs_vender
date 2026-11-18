@@ -83,12 +83,13 @@ void InitLogger(plog::Severity severity, plog::IAppender *appender) {
 	plogInit(severity, appender);
 }
 
+void SetThreadPoolSize(unsigned int count) { impl::Init::Instance().setThreadPoolSize(count); }
+void SetSctpSettings(SctpSettings s) { impl::Init::Instance().setSctpSettings(std::move(s)); }
+
 void Preload() { impl::Init::Instance().preload(); }
 std::shared_future<void> Cleanup() { return impl::Init::Instance().cleanup(); }
 
-void SetSctpSettings(SctpSettings s) { impl::Init::Instance().setSctpSettings(std::move(s)); }
-
-RTC_CPP_EXPORT std::ostream &operator<<(std::ostream &out, LogLevel level) {
+std::ostream &operator<<(std::ostream &out, LogLevel level) {
 	switch (level) {
 	case LogLevel::Fatal:
 		out << "fatal";

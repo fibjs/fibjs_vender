@@ -172,7 +172,7 @@ finish_random(void)
 {
 	return;
 }
-#elif (defined(__ANDROID__) && (__ANDROID_API__ < 28)) || defined(__EMSCRIPTEN__)
+#elif (defined(__ANDROID__) && (__ANDROID_API__ < 28)) || defined(__QNX__) || defined(__EMSCRIPTEN__)
 #include <fcntl.h>
 
 static int fd = -1;
@@ -367,7 +367,7 @@ read_random(void *buf, size_t size)
 
 	position = 0;
 	while (position < size) {
-		if (nacl_secure_random((char *)buf + position, size - position, &n) == 0)
+		if (nacl_secure_random((char *)buf + position, size - position, &n) == 0) {
 			position += n;
 		}
 	}

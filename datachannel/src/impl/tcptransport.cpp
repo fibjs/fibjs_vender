@@ -200,23 +200,23 @@ void TcpTransport::resolve() {
 }
 
 void TcpTransport::attempt() {
-	std::lock_guard lock(mSendMutex);
-
-	if (state() != State::Connecting)
-		return; // Cancelled
-
-	if (mSock == INVALID_SOCKET) {
-		::closesocket(mSock);
-		mSock = INVALID_SOCKET;
-	}
-
-	if (mResolved.empty()) {
-		PLOG_WARNING << "Connection to " << mHostname << ":" << mService << " failed";
-		changeState(State::Failed);
-		return;
-	}
-
 	try {
+		std::lock_guard lock(mSendMutex);
+
+		if (state() != State::Connecting)
+			return; // Cancelled
+
+		if (mSock != INVALID_SOCKET) {
+			::closesocket(mSock);
+			mSock = INVALID_SOCKET;
+		}
+
+		if (mResolved.empty()) {
+			PLOG_WARNING << "Connection to " << mHostname << ":" << mService << " failed";
+			changeState(State::Failed);
+			return;
+		}
+
 		auto [addr, addrlen] = mResolved.front();
 		mResolved.pop_front();
 
@@ -228,44 +228,9 @@ void TcpTransport::attempt() {
 		return;
 	}
 
-	// Poll out event callback
-	auto callback = [this](PollService::Event event) {
-		try {
-			if (event == PollService::Event::Error)
-				throw std::runtime_error("TCP connection failed");
-
-			if (event == PollService::Event::Timeout)
-				throw std::runtime_error("TCP connection timed out");
-
-			if (event != PollService::Event::Out)
-				return;
-
-			int err = 0;
-			socklen_t errlen = sizeof(err);
-			if (::getsockopt(mSock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&err),
-			                 &errlen) != 0)
-				throw std::runtime_error("Failed to get socket error code");
-
-			if (err != 0) {
-				std::ostringstream msg;
-				msg << "TCP connection failed, errno=" << err;
-				throw std::runtime_error(msg.str());
-			}
-
-			// Success
-			PLOG_INFO << "TCP connected";
-			changeState(State::Connected);
-			setPoll(PollService::Direction::In);
-
-		} catch (const std::exception &e) {
-			PLOG_DEBUG << e.what();
-			PollService::Instance().remove(mSock);
-			ThreadPool::Instance().enqueue(weak_bind(&TcpTransport::attempt, this));
-		}
-	};
-
 	const auto timeout = 10s;
-	PollService::Instance().add(mSock, {PollService::Direction::Out, timeout, std::move(callback)});
+	PollService::Instance().add(mSock, {PollService::Direction::Out, timeout, 
+	    weak_bind(&TcpTransport::processConnect, this, _1)});
 }
 
 void TcpTransport::createSocket(const struct sockaddr *addr, socklen_t addrlen) {
@@ -326,7 +291,7 @@ void TcpTransport::configureSocket() {
 void TcpTransport::setPoll(PollService::Direction direction) {
 	PollService::Instance().add(
 	    mSock, {direction, direction == PollService::Direction::In ? mReadTimeout : nullopt,
-	            std::bind(&TcpTransport::process, this, _1)});
+	            weak_bind(&TcpTransport::process, this, _1)});
 }
 
 void TcpTransport::close() {
@@ -372,7 +337,9 @@ bool TcpTransport::trySendMessage(message_ptr &message) {
 		int len = ::send(mSock, data, int(size), flags);
 		if (len < 0) {
 			if (sockerrno == SEAGAIN || sockerrno == SEWOULDBLOCK) {
-				message = make_message(message->end() - size, message->end());
+				if (size < message->size())
+					message = make_message(message->end() - size, message->end());
+
 				return false;
 			} else {
 				PLOG_ERROR << "Connection closed, errno=" << sockerrno;
@@ -427,6 +394,7 @@ void TcpTransport::process(PollService::Event event) {
 		}
 
 		case PollService::Event::Out: {
+			std::lock_guard lock(mSendMutex);
 			if (trySendQueue())
 				setPoll(PollService::Direction::In);
 
@@ -466,6 +434,41 @@ void TcpTransport::process(PollService::Event event) {
 	PollService::Instance().remove(mSock);
 	changeState(State::Disconnected);
 	recv(nullptr);
+}
+
+void TcpTransport::processConnect(PollService::Event event) {
+	try {
+		if (event == PollService::Event::Error)
+			throw std::runtime_error("TCP connection failed");
+
+		if (event == PollService::Event::Timeout)
+			throw std::runtime_error("TCP connection timed out");
+
+		if (event != PollService::Event::Out)
+			return;
+
+		int err = 0;
+		socklen_t errlen = sizeof(err);
+		if (::getsockopt(mSock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&err),
+						 &errlen) != 0)
+			throw std::runtime_error("Failed to get socket error code");
+
+		if (err != 0) {
+			std::ostringstream msg;
+			msg << "TCP connection failed, errno=" << err;
+			throw std::runtime_error(msg.str());
+		}
+
+		// Success
+		PLOG_INFO << "TCP connected";
+		changeState(State::Connected);
+		setPoll(PollService::Direction::In);
+
+	} catch (const std::exception &e) {
+		PLOG_DEBUG << e.what();
+		PollService::Instance().remove(mSock);
+		ThreadPool::Instance().enqueue(weak_bind(&TcpTransport::attempt, this));
+	}
 }
 
 } // namespace rtc::impl

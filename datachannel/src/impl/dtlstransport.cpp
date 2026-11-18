@@ -33,10 +33,12 @@ void DtlsTransport::enqueueRecv() {
 	if (mPendingRecvCount > 0)
 		return;
 
-	if (auto shared_this = weak_from_this().lock()) {
-		++mPendingRecvCount;
-		ThreadPool::Instance().enqueue(&DtlsTransport::doRecv, std::move(shared_this));
-	}
+	++mPendingRecvCount;
+
+	ThreadPool::Instance().enqueue([weak_this = weak_from_this()]() {
+		if (auto locked = weak_this.lock())
+			locked->doRecv();
+	});
 }
 
 #if USE_GNUTLS
@@ -83,6 +85,8 @@ DtlsTransport::DtlsTransport(shared_ptr<IceTransport> lower, certificate_ptr cer
 		              "Failed to set SRTP profile");
 
 		gnutls::check(gnutls_credentials_set(mSession, GNUTLS_CRD_CERTIFICATE, creds));
+		if (!mIsClient)
+			gnutls_certificate_server_set_request(mSession, GNUTLS_CERT_REQUIRE);
 
 		gnutls_dtls_set_timeouts(mSession,
 		                         1000,   // 1s retransmission timeout recommended by RFC 6347
@@ -160,8 +164,11 @@ void DtlsTransport::incoming(message_ptr message) {
 	}
 
 	PLOG_VERBOSE << "Incoming size=" << message->size();
-	mIncomingQueue.push(message);
-	enqueueRecv();
+	if (mIncomingQueue.tryPush(std::move(message))) {
+		enqueueRecv();
+	} else {
+		PLOG_VERBOSE << "DTLS incoming queue is full, dropping";
+	}
 }
 
 bool DtlsTransport::outgoing(message_ptr message) {
@@ -499,8 +506,11 @@ void DtlsTransport::incoming(message_ptr message) {
 	}
 
 	PLOG_VERBOSE << "Incoming size=" << message->size();
-	mIncomingQueue.push(message);
-	enqueueRecv();
+	if (mIncomingQueue.tryPush(std::move(message))) {
+		enqueueRecv();
+	} else {
+		PLOG_VERBOSE << "DTLS incoming queue is full, dropping";
+	}
 }
 
 bool DtlsTransport::outgoing(message_ptr message) {
@@ -541,7 +551,9 @@ void DtlsTransport::doRecv() {
 				}
 
 				if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
-					ThreadPool::Instance().schedule(mTimerSetAt + milliseconds(mFinMs),
+					auto timeout = mFinMs != 0 ? mTimerSetAt + milliseconds(mFinMs)
+					                           : std::chrono::steady_clock::now() + milliseconds(MBEDTLS_SSL_DTLS_TIMEOUT_DFL_MIN);
+					ThreadPool::Instance().schedule(timeout,
 					                                [weak_this = weak_from_this()]() {
 						                                if (auto locked = weak_this.lock())
 							                                locked->doRecv();
@@ -608,12 +620,18 @@ void DtlsTransport::doRecv() {
 }
 
 int DtlsTransport::CertificateCallback(void *ctx, mbedtls_x509_crt *crt, int /*depth*/,
-                                       uint32_t * /*flags*/) {
+                                       uint32_t *flags) {
 	auto this_ = static_cast<DtlsTransport *>(ctx);
 	string fingerprint = make_fingerprint(crt, this_->mFingerprintAlgorithm);
 	std::transform(fingerprint.begin(), fingerprint.end(), fingerprint.begin(),
 	               [](char c) { return char(std::toupper(c)); });
-	return this_->mVerifierCallback(fingerprint) ? 0 : 1;
+
+	if (!this_->mVerifierCallback(fingerprint)) {
+		if (flags) *flags |= MBEDTLS_X509_BADCERT_NOT_TRUSTED;
+		return MBEDTLS_ERR_X509_CERT_VERIFY_FAILED;
+	}
+
+	return 0;
 }
 
 void DtlsTransport::ExportKeysCallback(void *ctx, mbedtls_ssl_key_export_type /*type*/,
@@ -658,7 +676,7 @@ int DtlsTransport::ReadCallback(void *ctx, unsigned char *buf, size_t len) {
 
 			auto bufMin = std::min(len, size_t(message->size()));
 			std::memcpy(buf, message->data(), bufMin);
-			return int(len);
+			return int(bufMin);
 		}
 
 		// Closed
@@ -761,7 +779,7 @@ DtlsTransport::DtlsTransport(shared_ptr<IceTransport> lower, certificate_ptr cer
 		                   CertificateCallback);
 		SSL_CTX_set_verify_depth(mCtx, 1);
 
-		openssl::check(SSL_CTX_set_cipher_list(mCtx, "ALL:!LOW:!EXP:!RC4:!MD5:@STRENGTH"),
+		openssl::check(SSL_CTX_set_cipher_list(mCtx, "ALL:!SHA256:!SHA384:!aPSK:!ECDSA+SHA1:!ADH:!LOW:!EXP:!MD5:!3DES:!SSLv3:!TLSv1"),
 		               "Failed to set SSL priorities");
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000
@@ -856,7 +874,13 @@ void DtlsTransport::start() {
 
 	openssl::check_error(err, "Handshake failed");
 
-	handleTimeout();
+	// start() can run on the libjuice poll thread via the ICE state-change
+	// callback, while juice still holds its registry mutex. Calling
+	// handleTimeout() inline then waits on mSslMutex, which a thread pool
+	// recv thread may hold while blocked in juice_send (conn_lock) on the
+	// TURN relay path, forming an ABBA deadlock. Defer the initial timeout
+	// handling to the thread pool, as the other TLS backends do.
+	enqueueRecv(); // to initiate the handshake
 }
 
 void DtlsTransport::stop() {
@@ -894,8 +918,11 @@ void DtlsTransport::incoming(message_ptr message) {
 	}
 
 	PLOG_VERBOSE << "Incoming size=" << message->size();
-	mIncomingQueue.push(message);
-	enqueueRecv();
+	if (mIncomingQueue.tryPush(std::move(message))) {
+		enqueueRecv();
+	} else {
+		PLOG_VERBOSE << "DTLS incoming queue is full, dropping";
+	}
 }
 
 bool DtlsTransport::outgoing(message_ptr message) {
@@ -941,13 +968,14 @@ void DtlsTransport::doRecv() {
 			if (demuxMessage(message))
 				continue;
 
-			BIO_write(mInBio, message->data(), int(message->size()));
-
+			bool incomingWritten = false;
 			if (state() == State::Connecting) {
 				// Continue the handshake
 				int ret, err;
 				{
 					std::lock_guard lock(mSslMutex);
+					BIO_write(mInBio, message->data(), int(message->size()));
+					incomingWritten = true;
 					ret = SSL_do_handshake(mSsl);
 					err = SSL_get_error(mSsl, ret);
 				}
@@ -970,6 +998,8 @@ void DtlsTransport::doRecv() {
 				int ret, err;
 				{
 					std::lock_guard lock(mSslMutex);
+					if (!incomingWritten)
+						BIO_write(mInBio, message->data(), int(message->size()));
 					ret = SSL_read(mSsl, buffer, bufferSize);
 					err = SSL_get_error(mSsl, ret);
 				}

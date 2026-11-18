@@ -157,11 +157,13 @@ Description::Description(const string &sdp, Type type, Role role)
 				// RFC 8839: The "ice-options" attribute is a session-level and media-level
 				// attribute.
 				if (mIceOptions.empty())
-					mIceOptions = utils::explode(string(value), ',');
+					mIceOptions = utils::explode(string(value), ' ');
 			} else if (key == "candidate") {
 				addCandidate(Candidate(attr, bundleMid()));
 			} else if (key == "end-of-candidates") {
 				mEnded = true;
+			} else if (key == "group") {
+				// Ignore, it will be generated automatically
 			} else if (current) {
 				current->parseSdpLine(std::move(line));
 			} else {
@@ -216,6 +218,21 @@ void Description::hintType(Type type) {
 		mType = type;
 }
 
+void Description::addIceOption(string option) {
+	if (std::find(mIceOptions.begin(), mIceOptions.end(), option) == mIceOptions.end())
+		mIceOptions.emplace_back(std::move(option));
+}
+
+void Description::removeIceOption(const string &option) {
+	mIceOptions.erase(std::remove(mIceOptions.begin(), mIceOptions.end(), option),
+	                  mIceOptions.end());
+}
+
+void Description::setIceAttribute(string ufrag, string pwd) {
+	mIceUfrag = std::move(ufrag);
+	mIcePwd = std::move(pwd);
+}
+
 void Description::setFingerprint(CertificateFingerprint f) {
 	if (!f.isValid())
 		throw std::invalid_argument("Invalid " +
@@ -225,16 +242,6 @@ void Description::setFingerprint(CertificateFingerprint f) {
 	std::transform(f.value.begin(), f.value.end(), f.value.begin(),
 	               [](char c) { return char(std::toupper(c)); });
 	mFingerprint = std::move(f);
-}
-
-void Description::addIceOption(string option) {
-	if (std::find(mIceOptions.begin(), mIceOptions.end(), option) == mIceOptions.end())
-		mIceOptions.emplace_back(std::move(option));
-}
-
-void Description::removeIceOption(const string &option) {
-	mIceOptions.erase(std::remove(mIceOptions.begin(), mIceOptions.end(), option),
-	                  mIceOptions.end());
 }
 
 std::vector<string> Description::Entry::attributes() const { return mAttributes; }
@@ -311,7 +318,7 @@ string Description::generateSdp(string_view eol) const {
 	// Session-level attributes
 	sdp << "a=msid-semantic:WMS *" << eol;
 	if (!mIceOptions.empty())
-		sdp << "a=ice-options:" << utils::implode(mIceOptions, ',') << eol;
+		sdp << "a=ice-options:" << utils::implode(mIceOptions, ' ') << eol;
 	if (mFingerprint)
 		sdp << "a=fingerprint:"
 		    << CertificateFingerprint::AlgorithmIdentifier(mFingerprint->algorithm) << " "
@@ -374,7 +381,7 @@ string Description::generateApplicationSdp(string_view eol) const {
 	// Session-level attributes
 	sdp << "a=msid-semantic:WMS *" << eol;
 	if (!mIceOptions.empty())
-		sdp << "a=ice-options:" << utils::implode(mIceOptions, ',') << eol;
+		sdp << "a=ice-options:" << utils::implode(mIceOptions, ' ') << eol;
 
 	for (const auto &attr : mAttributes)
 		sdp << "a=" << attr << eol;
@@ -537,6 +544,8 @@ variant<const Description::Media *, const Description::Application *> Descriptio
 
 int Description::mediaCount() const { return int(mEntries.size()); }
 
+string Description::sessionId() const { return mSessionId; }
+
 Description::Entry::Entry(const string &mline, string mid, Direction dir)
     : mMid(std::move(mid)), mDirection(dir) {
 
@@ -658,7 +667,15 @@ string Description::Entry::generateSdpLines(string_view eol) const {
 	if (mDirection != Direction::Unknown)
 		sdp << "a=" << mDirection << eol;
 
+	// Do not reciprocate unknown transport attributes
+	const std::array ignoredPrefixes{"ice-", "dtls-", "sctp-"};
+
 	for (const auto &attr : mAttributes) {
+		if (std::any_of(ignoredPrefixes.begin(), ignoredPrefixes.end(),
+		                [&](string_view prefix) { return match_prefix(attr, prefix); })) {
+			continue;
+		}
+
 		if (mRids.size() != 0 && match_prefix(attr, "ssrc:")) {
 			continue;
 		}
@@ -1196,7 +1213,7 @@ Description::Audio::Audio(string mid, Direction dir)
 
 void Description::Audio::addAudioCodec(int payloadType, string codec, optional<string> profile) {
 	if (codec.find('/') == string::npos) {
-		if (codec == "PCMA" || codec == "PCMU")
+		if (codec == "PCMA" || codec == "PCMU" || codec == "G722")
 			codec += "/8000/1";
 		else
 			codec += "/48000/2";
@@ -1220,6 +1237,10 @@ void Description::Audio::addPCMACodec(int payloadType, optional<string> profile)
 
 void Description::Audio::addPCMUCodec(int payloadType, optional<string> profile) {
 	addAudioCodec(payloadType, "PCMU", profile);
+}
+
+void Description::Audio::addG722Codec(int payloadType, optional<string> profile) {
+	addAudioCodec(payloadType, "G722", profile);
 }
 
 void Description::Audio::addAACCodec(int payloadType, optional<string> profile) {
@@ -1339,7 +1360,7 @@ std::string CertificateFingerprint::AlgorithmIdentifier(
 	case CertificateFingerprint::Algorithm::Sha256:
 		return "sha-256";
 	case CertificateFingerprint::Algorithm::Sha384:
-		return "sha-256";
+		return "sha-384";
 	case CertificateFingerprint::Algorithm::Sha512:
 		return "sha-512";
 	default:

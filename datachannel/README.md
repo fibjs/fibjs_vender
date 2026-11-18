@@ -5,11 +5,12 @@
 [![Build with Mbed TLS](https://github.com/paullouisageneau/libdatachannel/actions/workflows/build-mbedtls.yml/badge.svg)](https://github.com/paullouisageneau/libdatachannel/actions/workflows/build-mbedtls.yml)
 [![Build with OpenSSL](https://github.com/paullouisageneau/libdatachannel/actions/workflows/build-openssl.yml/badge.svg)](https://github.com/paullouisageneau/libdatachannel/actions/workflows/build-openssl.yml)
 
-[![AUR package](https://repology.org/badge/version-for-repo/aur/libdatachannel.svg)](https://repology.org/project/libdatachannel/versions) [![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/libdatachannel.svg)](https://repology.org/project/libdatachannel/versions) [![Vcpkg package](https://repology.org/badge/version-for-repo/vcpkg/libdatachannel.svg)](https://repology.org/project/libdatachannel/versions)
+[![Packaging status](https://repology.org/badge/tiny-repos/libdatachannel.svg)](https://repology.org/project/libdatachannel/versions)
+[![Latest packaged version](https://repology.org/badge/latest-versions/libdatachannel.svg)](https://repology.org/project/libdatachannel/versions)
 [![Gitter](https://badges.gitter.im/libdatachannel/community.svg)](https://gitter.im/libdatachannel/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Discord](https://img.shields.io/discord/903257095539925006?logo=discord)](https://discord.gg/jXAP8jp3Nn)
 
-libdatachannel is a standalone implementation of WebRTC Data Channels, WebRTC Media Transport, and WebSockets in C++17 with C bindings for POSIX platforms (including GNU/Linux, Android, FreeBSD, Apple macOS and iOS) and Microsoft Windows. WebRTC is a W3C and IETF standard enabling real-time peer-to-peer data and media exchange between two devices.
+libdatachannel is a standalone implementation of WebRTC Data Channels, WebRTC Media Transport, and WebSockets in C++ with C bindings for multiple platforms, including GNU/Linux, Android, FreeBSD, Apple macOS, iOS, and Microsoft Windows. WebRTC is a W3C and IETF standard enabling real-time peer-to-peer data and media exchange between two devices.
 
 The library aims at being both straightforward and lightweight with minimal external dependencies, to enable direct connectivity between native applications and web browsers without the pain of importing Google's bloated [reference library](https://webrtc.googlesource.com/src/). The interface consists of somewhat simplified versions of the JavaScript WebRTC and WebSocket APIs present in browsers, in order to ease the design of cross-environment applications.
 
@@ -21,7 +22,7 @@ The WebRTC stack is fully compatible with browsers like Firefox and Chromium, se
 
 libdatachannel is licensed under MPL 2.0 since version 0.18, see [LICENSE](https://github.com/paullouisageneau/libdatachannel/blob/master/LICENSE) (previous versions were licensed under LGPLv2.1 or later).
 
-libdatachannel is available on [AUR](https://aur.archlinux.org/packages/libdatachannel/), [vcpkg](https://vcpkg.io/en/getting-started), and [FreeBSD ports](https://www.freshports.org/www/libdatachannel). Bindings are available for [Rust](https://crates.io/crates/datachannel) and [Node.js](https://www.npmjs.com/package/node-datachannel).
+libdatachannel is available on [AUR](https://aur.archlinux.org/packages/libdatachannel/), [vcpkg](https://vcpkg.io/en/getting-started), [conan](https://conan.io/center/recipes/libdatachannel), and [FreeBSD ports](https://www.freshports.org/www/libdatachannel). Bindings are available for [Rust](https://crates.io/crates/datachannel) and [Node.js](https://www.npmjs.com/package/node-datachannel).
 
 ## Dependencies
 
@@ -122,7 +123,7 @@ ws.onOpen([]() {
 
 ws.onMessage([](std::variant<rtc::binary, rtc::string> message) {
     if (std::holds_alternative<rtc::string>(message)) {
-        std::cout << "WebSocket received: " << std::get<rtc::string>(message) << endl;
+        std::cout << "WebSocket received: " << std::get<rtc::string>(message) << std::endl;
     }
 });
 
