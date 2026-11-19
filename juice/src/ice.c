@@ -211,11 +211,17 @@ int ice_resolve_candidate(ice_candidate_t *candidate, ice_resolve_mode_t mode) {
 		hints.ai_socktype = SOCK_DGRAM;
 		hints.ai_protocol = IPPROTO_UDP;
 	}
+	if (mode != ICE_RESOLVE_MODE_LOOKUP) {
+		// A numeric address must resolve even when no non-loopback address of
+		// its family is configured: AI_ADDRCONFIG rejects a loopback literal
+		// on an IPv4-only host (for example a container) although the address
+		// is usable.
+		hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+	} else {
 #ifdef AI_ADDRCONFIG
-	hints.ai_flags = AI_ADDRCONFIG;
+		hints.ai_flags = AI_ADDRCONFIG;
 #endif
-	if (mode != ICE_RESOLVE_MODE_LOOKUP)
-		hints.ai_flags |= AI_NUMERICHOST | AI_NUMERICSERV;
+	}
 	struct addrinfo *ai_list = NULL;
 	if (getaddrinfo(candidate->hostname, candidate->service, &hints, &ai_list)) {
 		JLOG_INFO("Failed to resolve address: %s:%s", candidate->hostname, candidate->service);

@@ -156,7 +156,11 @@ bool Candidate::resolve(ResolveMode mode) {
 	// Try to resolve the node and service
 	struct addrinfo hints = {};
 	hints.ai_family = AF_UNSPEC;
-	hints.ai_flags = AI_ADDRCONFIG;
+	// AI_ADDRCONFIG makes getaddrinfo reject a numeric address when no
+	// non-loopback address of that family is configured. An IPv4-only host
+	// (for example a container) would then fail to resolve "::1" even though
+	// the loopback is up and usable, so only apply the hint to name lookups.
+	hints.ai_flags = mode == ResolveMode::Simple ? AI_NUMERICHOST : AI_ADDRCONFIG;
 	if (mTransportType == TransportType::Udp) {
 		hints.ai_socktype = SOCK_DGRAM;
 		hints.ai_protocol = IPPROTO_UDP;
@@ -164,9 +168,6 @@ bool Candidate::resolve(ResolveMode mode) {
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = IPPROTO_TCP;
 	}
-
-	if (mode == ResolveMode::Simple)
-		hints.ai_flags |= AI_NUMERICHOST;
 
 	struct addrinfo *result = nullptr;
 	if (getaddrinfo(mNode.c_str(), mService.c_str(), &hints, &result) == 0) {
