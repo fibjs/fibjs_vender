@@ -104,18 +104,61 @@ Service::~Service()
     }
 }
 
-Service* Service::createDedicated()
+Service* Service::createDedicatedUnstarted()
 {
     Service* svc = new Service(true);
 
     // start() takes one reference for the thread itself. Take a second one for
     // the owner so the object stays valid after the thread returned from Run()
     // and the framework dropped its own reference - the owner releases it with
-    // Unref() once it stops using the service.
+    // Unref() once it stops using the service. A guest service owns no thread,
+    // but keeps the same ownership model.
     svc->Ref();
+
+    return svc;
+}
+
+Service* Service::createDedicated()
+{
+    Service* svc = createDedicatedUnstarted();
     svc->start();
 
     return svc;
+}
+
+void Service::attachCurrentThread()
+{
+    ex_assert(m_dedicated);
+    ex_assert(!m_guest);
+    ex_assert(m_running == &m_main);
+    ex_assert(thread_ == 0);
+
+    // Mirror the first half of Run(): the caller becomes the service thread and
+    // its native stack becomes the context every fiber switches back to.
+    OSThread::bindCurrent();
+
+    m_main.save_stack_start();
+    m_main.m_ctx = convert_fiber(NULL);
+    bind_main_stack();
+
+    m_guest = true;
+}
+
+void Service::setWaitHook(WaitHook* hook)
+{
+    m_wait_hook = hook;
+}
+
+void Service::on_host_context_block()
+{
+    fprintf(stderr, "\n");
+    fprintf(stderr, "!!! BLOCKING WAIT ON THE SERVICE HOST CONTEXT !!!\n");
+    fprintf(stderr, "  A fiber-level wait ran on the service main fiber, which is the\n");
+    fprintf(stderr, "  native host context (GUI event loop). Event/Semaphore/Locker\n");
+    fprintf(stderr, "  waits are not allowed there: there is no fiber to switch to.\n");
+    fflush(stderr);
+
+    abort();
 }
 
 void Service::shutdown()
@@ -124,7 +167,12 @@ void Service::shutdown()
         return;
 
     m_shutting_down = 1;
-    m_sem.Post();
+
+    WaitHook* hook = m_wait_hook;
+    if (hook)
+        hook->wake(this);
+    else
+        m_sem.Post();
 }
 
 void Service::on_post_after_shutdown(Fiber* fiber)
@@ -249,20 +297,38 @@ void Service::dispatch()
     s_service->dispatch_loop();
 }
 
+void Service::before_next(Fiber* last)
+{
+    m_running = &m_main;
+
+    // Whatever ran before has suspended by now (yield, block or exit).
+    notify_suspended(last);
+
+    if (m_cb) {
+        switchConextCallback* cb = m_cb;
+        m_cb = NULL;
+        cb->invoke();
+    }
+}
+
+void Service::run_fiber(Fiber* fb)
+{
+    m_running = fb;
+    fb->m_pService = this;
+    notify_about_to_run(fb);
+
+    if (stack_trace_capacity())
+        stack_trace_record(fb->stack_id(), fb->stack_desc().stack_start, fb->name());
+
+    switch_fiber(m_main.m_ctx, fb->m_ctx);
+}
+
 void Service::dispatch_loop()
 {
     Fiber* last = NULL;
 
     while (true) {
-        m_running = &m_main;
-
-        // Whatever ran before has suspended by now (yield, block or exit).
-        notify_suspended(last);
-
-        if (m_cb) {
-            m_cb->invoke();
-            m_cb = NULL;
-        }
+        before_next(last);
 
         Fiber* fb = next();
 
@@ -276,14 +342,7 @@ void Service::dispatch_loop()
             break;
         }
 
-        m_running = fb;
-        fb->m_pService = this;
-        notify_about_to_run(fb);
-
-        if (stack_trace_capacity())
-            stack_trace_record(fb->stack_id(), fb->stack_desc().stack_start, fb->name());
-
-        switch_fiber(m_main.m_ctx, fb->m_ctx);
+        run_fiber(fb);
         last = fb;
     }
 }

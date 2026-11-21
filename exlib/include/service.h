@@ -59,6 +59,81 @@ public:
     // fiber posted to it always runs on that thread until shutdown().
     static Service* createDedicated();
 
+    // Same as createDedicated(), but without starting an OS thread. The owner
+    // must bind it to the thread that will run it with attachCurrentThread()
+    // and then drive it with runPending(). This is the "guest" mode used when
+    // the process main thread owns a native event loop (GUI) and therefore
+    // cannot enter dispatch_loop().
+    static Service* createDedicatedUnstarted();
+
+    // Bind this (not yet started) dedicated service to the calling thread and
+    // turn the caller into the service's main fiber. Must be called before any
+    // runPending(), on the thread that will call it, after the platform wakeup
+    // source used by the WaitHook exists. start() must not have been called.
+    void attachCurrentThread();
+
+    // Runs at most `budget` resumable fibers without blocking.
+    bool runPending(int32_t budget = 64)
+    {
+        ex_assert(m_guest);
+        ex_assert(m_dedicated);
+        ex_assert(OSThread::current() == this);
+
+        // A nested native loop (modal dialog, window tracking, an addon pumping
+        // its own loop) can call back into the host while a drain is already
+        // running. The outer drain still owns the run queue and will finish it,
+        // so report "nothing claimed": returning true here would make the host
+        // re-arm its wakeup source and spin at 100% CPU for the whole modal.
+        if (m_draining != 0)
+            return false;
+
+        ex_assert(m_running == &m_main);
+        m_draining = 1;
+
+        int32_t n = 0;
+
+        while (true) {
+            before_next(m_last);
+            m_last = NULL;
+
+            // The budget is checked before dequeuing: getHead() removes the
+            // fiber from the queue, so returning after the dequeue would drop
+            // it forever.
+            if (n >= budget) {
+                m_draining = 0;
+                return true;
+            }
+
+            Fiber* fb = m_resumeList.getHead();
+            if (!fb) {
+                m_draining = 0;
+
+                // A producer that posted between getHead() and the flag store
+                // saw m_draining == 1 and skipped its wakeup. Re-check with the
+                // flag down: if work arrived, keep draining; otherwise post()
+                // races against a flag of 0 and will wake us itself.
+                if (!m_resumeList.empty()) {
+                    m_draining = 1;
+                    continue;
+                }
+
+                return false;
+            }
+
+            n++;
+            run_fiber(fb);
+            m_last = fb;
+        }
+    }
+
+    // True while runPending() is executing on the attached thread. Host
+    // callbacks use it to avoid dispatching GUI events from the JS stack when a
+    // nested native loop re-enters the host.
+    bool is_guest_draining() const
+    {
+        return m_guest && m_draining != 0;
+    }
+
     static void CreateFiber(fiber_func func, void* data, int32_t stacksize,
         const char* name = NULL, Thread_base** retVal = NULL);
 
@@ -122,6 +197,21 @@ public:
             hook->on_fiber_about_to_run(fiber);
     }
 
+    // Optional wakeup source for a guest service (see attachCurrentThread).
+    // Service::post() calls wake() instead of posting the service semaphore,
+    // so a native event loop can be woken. The hook must be in place before
+    // fibers are posted, and the primitive it uses must already exist.
+    class WaitHook {
+    public:
+        virtual ~WaitHook()
+        {
+        }
+
+        virtual void wake(Service* svc) = 0;
+    };
+
+    void setWaitHook(WaitHook* hook);
+
     static void notify_suspended(Thread_base* fiber)
     {
         SwitchHook* hook = switch_hook();
@@ -160,7 +250,19 @@ public:
             on_post_after_shutdown(fiber);
 
         m_resumeList.putTail(fiber);
-        m_sem.Post();
+
+        // A drain already owns the scheduler and will pick a fiber posted here
+        // up before it returns; waking the host would only add a redundant
+        // native dispatch. runPending() clears m_draining and re-checks the
+        // queue, so a post landing in this window cannot lose its wakeup.
+        if (m_draining != 0)
+            return;
+
+        WaitHook* hook = m_wait_hook;
+        if (hook)
+            hook->wake(this);
+        else
+            m_sem.Post();
     }
 
     Fiber* next()
@@ -214,6 +316,13 @@ public:
 public:
     void switchConext()
     {
+        // The GUI host context is the service main fiber: a fiber-level wait
+        // there can never suspend (there is no other fiber to switch to), and
+        // the old code only hid it behind a debug assert. Report it loudly in
+        // every build instead of switching a fiber onto itself.
+        if (m_guest && m_running == &m_main)
+            on_host_context_block();
+
         ex_assert(m_running != &m_main);
         ex_assert(current() == this);
 
@@ -242,6 +351,13 @@ private:
 
     void on_post_after_shutdown(Fiber* fiber);
 
+    // Shared by dispatch_loop() and runPending(): finish the previous
+    // suspension and run one fiber, without deciding where the fiber came from.
+    void before_next(Fiber* last);
+    void run_fiber(Fiber* fb);
+
+    void on_host_context_block();
+
 private:
     Service* m_master;
 
@@ -260,5 +376,13 @@ private:
     exlib::atomic m_stopped;
     LockedList<Fiber> m_resumeList;
     OSSemaphore m_sem;
+
+    // Guest mode (attachCurrentThread): the main fiber is the native host
+    // context, fibers are drained by runPending() from the host event loop.
+    bool m_guest = false;
+    exlib::atomic m_draining;
+    // Last fiber that ran, so notify_suspended() survives a return to the host.
+    Fiber* m_last = NULL;
+    atomic_ptr<WaitHook> m_wait_hook;
 };
 }
