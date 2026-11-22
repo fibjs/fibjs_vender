@@ -47,10 +47,11 @@ inline std::vector<char> wrap_packet(const std::vector<char>& payload, uint8_t s
 
 // Handshake v10 (protocol 4.1+). salt must be at least 20 chars without NUL.
 inline std::vector<char> handshake_packet_ex(const char* salt,
-    uint16_t caps_low, const char* auth_plugin, uint16_t caps_high)
+    uint16_t caps_low, const char* auth_plugin, uint16_t caps_high,
+    const char* server_version = "8.0.30-mock")
 {
     HandshakePacket hs;
-    hs.server_version = "8.0.30-mock";
+    hs.server_version = server_version;
     hs.thread_id = 12345;
     hs.salt = salt; // full 20 bytes; payload() splits part1/part2
     hs.caps_low = caps_low;

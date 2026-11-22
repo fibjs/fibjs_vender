@@ -60,6 +60,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Connection.h"
 #include "Packets.h"
 #include <assert.h>
+#include <stdlib.h>
 #include <string>
 #include <stdio.h>
 #include <time.h>
@@ -74,6 +75,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //#define PRINTMARK() fprintf(stderr, "%08x:%s:%s MARK(%d)\n", GetTickCount(), __FILE__, __FUNCTION__, __LINE__)		
 #define PRINTMARK() 		
+
+// Major version of the server version string: 5 for "5.7.44", 8 for "8.0.36",
+// 26 for "26.10.0". MariaDB keeps reporting "5.5.5-10.x" for compatibility.
+// The previous first-character check treated multi-digit majors starting below
+// '5' (e.g. MySQL 26.x) as ancient servers and dropped protocol features.
+static int server_major_version(const std::string& version)
+{
+  if (version.empty() || version[0] < '0' || version[0] > '9')
+    return 0;
+  return (int) strtol(version.c_str(), NULL, 10);
+}
 
 Connection::Connection (UMConnectionCAPI *_capi) 
   :	m_reader(MYSQL_RX_BUFFER_SIZE)
@@ -318,7 +330,11 @@ bool Connection::processHandshake()
     m_clientCaps  &= ~MCP_NO_SCHEMA;
     m_clientCaps &= ~MCP_SSL;
 
-    if(!hs.server_version.empty() && hs.server_version[0]>='5')
+    // Multi-statements are supported by every protocol 4.1 server we accept
+    // (MySQL/MariaDB 5 and newer). Compare the numeric major version: a
+    // first-character check rejected multi-digit majors (e.g. MySQL 26.10),
+    // silently dropping the capability bit.
+    if (server_major_version(hs.server_version) >= 5)
         m_clientCaps |= MCP_MULTI_STATEMENTS | MCP_MULTI_RESULTS;
 
     if (!(hs.caps_low & MCP_CONNECT_WITH_DB) && !m_database.empty())

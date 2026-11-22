@@ -45,6 +45,24 @@ TEST(umysql_connect, handshake_ok)
     EXPECT_EQ(env.capi.last_port, 3306);
 }
 
+TEST(umysql_connect, multi_statement_caps_with_multi_digit_version)
+{
+    MockEnv env;
+    // Calendar-versioned servers (MySQL 26.x) start below '5'. The capability
+    // must follow the numeric major version, not the first character.
+    env.sock.feed(handshake_packet_ex("0123456789abcdefghij",
+        MCP_PROTOCOL_41 | MCP_CONNECT_WITH_DB | MCP_TRANSACTIONS | MCP_SECURE_CONNECTION,
+        "mysql_native_password", 0, "26.10.0"));
+    env.sock.feed(ok_packet(2, 0, 0, 2));
+
+    Connection conn(&env.capi.capi);
+    ASSERT_TRUE(conn.connect("127.0.0.1", 3306, "root", "", "", NULL, MCS_utf8mb4_bin));
+
+    HandshakeResponse hs = parse_handshake_response(env.sock);
+    EXPECT_TRUE(hs.caps & MCP_MULTI_STATEMENTS);
+    EXPECT_TRUE(hs.caps & MCP_MULTI_RESULTS);
+}
+
 TEST(umysql_connect, password_and_database)
 {
     MockEnv env;
