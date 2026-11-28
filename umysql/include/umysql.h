@@ -81,6 +81,7 @@ typedef struct
   UINT8 type;
   UINT16 flags;
   UINT16 charset;
+  UINT32 length;
 } UMTypeInfo;
 
 typedef struct __UMConnectionCAPI

@@ -1060,6 +1060,7 @@ int Connection::readFields()
     m_fieldInfo[iField].type = col.type;
     m_fieldInfo[iField].flags = col.flags;
     m_fieldInfo[iField].charset = col.charset;
+    m_fieldInfo[iField].length = col.column_length;
     m_fieldNames[iField] = col.name;
     iField ++;
     m_reader.skip();
